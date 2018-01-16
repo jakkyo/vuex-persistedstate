@@ -1,37 +1,44 @@
 import merge from 'deepmerge';
 import shvl from 'shvl';
+import canWriteStorageCheck from 'can-use-storage-check';
+import throttle from 'lodash.throttle';
+import uuid from 'random-uuid-v4';
 
-export default function(options, storage, key) {
-  options = options || {};
-  storage = options.storage || (window && window.localStorage);
-  key = options.key || 'vuex';
+export default function(options = {}) {
+  const storage = options.storage || (window && window.sessionStorage);
+  const key = options.key || 'vuex';
+  const throttleTime = options.throttleTime || 0;
+  const afterLoad = options.afterLoad || (val => val);
+  const beforeSave = options.beforeSave || (val => val);
 
-  function canWriteStorage(storage) {
-    try {
-      storage.setItem('@@', 1);
-      storage.removeItem('@@');
-      return true;
-    } catch (e) {}
-
-    return false;
+  function getState(key, storage) {
+    let value;
+    return Promise.resolve()
+      .then(() => storage.getItem(key))
+      .then(value => {
+        if (value === 'undefined') {
+          return undefined;
+        }
+        return Promise.resolve()
+          .then(() => afterLoad(value))
+          .then(state => JSON.parse(state))
+          .catch(() => undefined);
+      });
   }
 
-  function getState(key, storage, value) {
-    try {
-      return (value = storage.getItem(key)) && value !== 'undefined'
-        ? JSON.parse(value)
-        : undefined;
-    } catch (err) {}
-
-    return undefined;
-  }
-
-  function filter() {
-    return true;
-  }
-
+  let lastSaveIndex = null;
   function setState(key, state, storage) {
-    return storage.setItem(key, JSON.stringify(state));
+    const saveIndex = uuid();
+    lastSaveIndex = saveIndex;
+
+    return Promise.resolve()
+      .then(() => beforeSave(JSON.stringify(state)))
+      .then(state => {
+        if (lastSaveIndex !== saveIndex) {
+          return Promise.resolve();
+        }
+        return storage.setItem(key, state);
+      });
   }
 
   function reducer(state, paths) {
@@ -42,34 +49,39 @@ export default function(options, storage, key) {
         }, {});
   }
 
-  function subscriber(store) {
-    return function(handler) {
-      return store.subscribe(handler);
-    };
-  }
-
-  if (!canWriteStorage(storage)) {
-    throw new Error('Invalid storage instance given');
+  function subscriber(store, handler) {
+    return store.subscribe(handler);
   }
 
   return function(store) {
-    const savedState = shvl.get(options, 'getState', getState)(key, storage);
-
-    if (typeof savedState === 'object' && savedState !== null) {
-      store.replaceState(merge(store.state, savedState, {
-        arrayMerge: function (store, saved) { return saved },
-        clone: false,
-      }));
-    }
-
-    (options.subscriber || subscriber)(store)(function(mutation, state) {
-      if ((options.filter || filter)(mutation)) {
-        (options.setState || setState)(
-          key,
-          (options.reducer || reducer)(state, options.paths || []),
-          storage
+    return Promise.resolve()
+      .then(() => canWriteStorageCheck(storage))
+      .then(canWriteStorage => {
+        if (!canWriteStorage) {
+          throw new Error('Invalid storage instance given');
+        }
+      })
+      .then(() => getState(key, storage))
+      .then(savedState => {
+        if (typeof savedState === 'object' && savedState !== null) {
+          store.replaceState(
+            merge(store.state, savedState, {
+              arrayMerge: function(store, saved) {
+                return saved;
+              },
+              clone: false
+            })
+          );
+        }
+      })
+      .then(() => {
+        return subscriber(
+          store,
+          throttle((mutation, state) => {
+            const reducedState = reducer(state, options.paths || []);
+            return setState(key, reducedState, storage);
+          }, throttleTime)
         );
-      }
-    });
+      });
   };
-};
+}

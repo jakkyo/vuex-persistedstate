@@ -1,28 +1,28 @@
 {
-  "name": "vuex-persistedstate",
+  "name": "vuex-persisted-preprocess-state",
   "description": "Persist Vuex state with localStorage.",
-  "version": "2.4.2",
+  "version": "1.0.3",
   "license": "MIT",
-  "author": "Robin van der Vleuten <robin@webstronauts.co> (robinvdvleuten.nl)",
+  "author": "Jake Oswaldo",
   "keywords": [
     "vue",
     "vuex",
     "plugin"
   ],
-  "homepage": "https://github.com/robinvdvleuten/vuex-persistedstate#readme",
-  "repository": "robinvdvleuten/vuex-persistedstate",
+  "homepage": "https://github.com/jakkyo/vuex-persistedstate#readme",
+  "repository": "jakkyo/vuex-persistedstate",
   "bugs": {
-    "url": "https://github.com/robinvdvleuten/vuex-persistedstate/issues"
+    "url": "https://github.com/jakkyo/vuex-persistedstate/issues"
   },
-  "main": "dist/vuex-persistedstate.js",
-  "module": "dist/vuex-persistedstate.es.js",
-  "jsnext:main": "dist/vuex-persistedstate.es.js",
-  "umd:main": "dist/vuex-persistedstate.umd.js",
+  "main": "dist/vuex-persisted-preprocess-state.js",
+  "module": "dist/vuex-persisted-preprocess-state.es.js",
+  "jsnext:main": "dist/vuex-persisted-preprocess-state.es.js",
+  "umd:main": "dist/vuex-persisted-preprocess-state.umd.js",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "rimraf dist && microbundle --external all --name createPersistedState index.js",
+    "build": "rimraf dist && microbundle --external all --name createPersistedState ./index.js",
     "precommit": "npm run build && lint-staged",
     "prepublish": "npm run build",
     "test": "npm-run-all test:**",
@@ -47,7 +47,10 @@
     ]
   },
   "dependencies": {
+    "can-use-storage-check": "^1.0.2",
     "deepmerge": "^2.0.1",
+    "lodash.throttle": "^4.1.1",
+    "random-uuid-v4": "0.0.6",
     "shvl": "^1.1.1"
   },
   "devDependencies": {
