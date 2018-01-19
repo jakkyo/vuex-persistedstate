@@ -29,8 +29,8 @@ it('cannot be created with invalid storage', () => {
   const plugin = createPersistedState({ storage });
   return plugin(store)
   .catch(() => {
-    expect(store.replaceState).not.toBeCalled;
-    expect(store.subscribe).not.toBeCalled;
+    expect(store.replaceState).not.toBeCalled();
+    expect(store.subscribe).not.toBeCalled();
   });
 });
 
@@ -55,7 +55,8 @@ it('works with async storages', () => {
   store.subscribe = jest.fn();
 
   const plugin = createPersistedState({ storage });
-  return plugin(store).then(() => {
+  return plugin(store)
+  .then(() => {
     expect(store.replaceState).toBeCalledWith({
       original: 'state',
       persisted: 'json'
@@ -91,9 +92,10 @@ it("does not replaces store's state when receiving invalid JSON", () => {
   store.subscribe = jest.fn();
 
   const plugin = createPersistedState({ storage });
-  return plugin(store).then(() => {
+  return plugin(store)
+  .catch(() => {
     expect(store.replaceState).not.toBeCalled();
-    expect(store.subscribe).toBeCalled();
+    expect(store.subscribe).not.toBeCalled();
   });
 });
 
@@ -106,9 +108,10 @@ it("does not replaces store's state when receiving null", () => {
   store.subscribe = jest.fn();
 
   const plugin = createPersistedState({ storage });
-  return plugin(store).then(() => {
+  return plugin(store)
+  .catch(() => {
     expect(store.replaceState).not.toBeCalled();
-    expect(store.subscribe).toBeCalled();
+    expect(store.subscribe).not.toBeCalled();
   });
 });
 
@@ -303,6 +306,32 @@ describe('"afterLoad" and "beforeSave" hooks', () => {
       );
     });
   });
+  it('should not sync if "beforeSave" throws error', () => {
+    const storage = new Storage();
+    storage.setItem('vuex', beforeSaveSync(
+      JSON.stringify({ persisted: 'json' })
+    ));
+
+    const store = new Vuex.Store({
+      state: { original: 'state' }
+    });
+    store.replaceState = jest.fn();
+    store.subscribe = jest.fn();
+
+    const plugin = createPersistedState({
+      storage,
+      afterLoad() {
+        throw new Error;
+      },
+      beforeSave: beforeSaveSync,
+    });
+
+    return plugin(store)
+    .catch(() => {
+      expect(store.replaceState).not.toBeCalled();
+      expect(store.subscribe).not.toBeCalled();
+    });
+  });
 
   it('should call async "beforeSave" for initial state', () => {
     const afterLoadMock = jest.fn();
@@ -348,7 +377,8 @@ describe('"afterLoad" and "beforeSave" hooks', () => {
       afterLoad: afterLoadSync,
       beforeSave: beforeSaveSync,
     });
-    return plugin(store).then(() => {
+    return plugin(store)
+    .then(() => {
       return store._subscribers[0]('mutation', { original: 'newState' });
     })
     .then(() => {

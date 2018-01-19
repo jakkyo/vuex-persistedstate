@@ -16,13 +16,12 @@ export default function(options = {}) {
     return Promise.resolve()
       .then(() => storage.getItem(key))
       .then(value => {
-        if (value === 'undefined') {
-          return undefined;
+        if (value === 'undefined' || value == null) {
+          return null;
         }
-        return Promise.resolve()
-          .then(() => afterLoad(value))
-          .then(state => JSON.parse(state))
-          .catch(() => undefined);
+        return Promise.resolve(value)
+          .then(afterLoad)
+          .then(JSON.parse);
       });
   }
 
@@ -63,7 +62,7 @@ export default function(options = {}) {
       })
       .then(() => getState(key, storage))
       .then(savedState => {
-        if (typeof savedState === 'object' && savedState !== null) {
+        if (typeof savedState === 'object' && savedState != null) {
           store.replaceState(
             merge(store.state, savedState, {
               arrayMerge: function(store, saved) {
