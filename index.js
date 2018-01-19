@@ -26,6 +26,7 @@ export default function(options = {}) {
   }
 
   let lastSaveIndex = null;
+  let unsynced = false;
   function setState(key, state, storage) {
     const saveIndex = uuid();
     lastSaveIndex = saveIndex;
@@ -33,7 +34,7 @@ export default function(options = {}) {
     return Promise.resolve()
       .then(() => beforeSave(JSON.stringify(state)))
       .then(state => {
-        if (lastSaveIndex !== saveIndex) {
+        if (unsynced || lastSaveIndex !== saveIndex) {
           return Promise.resolve();
         }
         return storage.setItem(key, state);
@@ -74,13 +75,18 @@ export default function(options = {}) {
         }
       })
       .then(() => {
-        return subscriber(
+        const unsyncFucntion = subscriber(
           store,
           throttle((mutation, state) => {
             const reducedState = reducer(state, options.paths || []);
             return setState(key, reducedState, storage);
           }, throttleTime)
         );
+
+        return function() {
+          unsynced = true;
+          unsyncFucntion();
+        };
       });
   };
 }

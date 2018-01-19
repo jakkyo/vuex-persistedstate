@@ -495,3 +495,30 @@ it('throttles subscribe call', () => {
     );
   });
 });
+
+it('unsync prevents throttled subscribe call', () => {
+  const storage = new Storage();
+  const store = new Vuex.Store({ state: { original: 'state0' } });
+  const plugin = createPersistedState({
+    storage,
+    throttleTime: 50
+  });
+
+  let unsync;
+  return Promise.resolve()
+  .then(() => plugin(store))
+  .then((synced) => unsync = synced)
+  .then(() => {
+    store._subscribers[0]('mutation', { original: 'state1' });
+    store._subscribers[0]('mutation', { original: 'state2' });
+    store._subscribers[0]('mutation', { original: 'state3' });
+  })
+  .then(() => timeout(5))
+  .then(() => unsync())
+  .then(() => timeout(50))
+  .then(() => {
+    expect(storage.getItem('vuex')).toBe(
+      JSON.stringify({ original: 'state1' })
+    );
+  });
+});

@@ -1,7 +1,7 @@
 {
   "name": "vuex-persisted-preprocess-state",
   "description": "Persist Vuex state with sync/async storages and preprocess.",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "license": "MIT",
   "author": "Jake Oswaldo",
   "keywords": [
