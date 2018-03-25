@@ -461,10 +461,16 @@ it('can be unsubscribed', () => {
     expect(storage.getItem('vuex')).toBe(
       JSON.stringify({ original: 'newState' })
     );
-    return synced.then((unsync) => unsync());
+    return synced.then((unsync) => {
+      const unsyncCall = unsync();
+      
+      expect(unsyncCall instanceof Promise).toBe(true);
+      return unsyncCall;
+    });
   })
   .then(() => {
-    return expect(store._subscribers.length).toBe(0);
+    expect(store._subscribers.length).toBe(0);
+    expect(storage.getItem('vuex')).toBe(null);
   });
 });
 
@@ -517,8 +523,6 @@ it('unsync prevents throttled subscribe call', () => {
   .then(() => unsync())
   .then(() => timeout(50))
   .then(() => {
-    expect(storage.getItem('vuex')).toBe(
-      JSON.stringify({ original: 'state1' })
-    );
+    expect(storage.getItem('vuex')).toBe(null);
   });
 });

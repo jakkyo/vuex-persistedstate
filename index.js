@@ -8,6 +8,7 @@ export default function(options = {}) {
   const storage = options.storage || (window && window.sessionStorage);
   const key = options.key || 'vuex';
   const throttleTime = options.throttleTime || 0;
+  const throttleOptions = options.throttleOptions || undefined;
   const afterLoad = options.afterLoad || (val => val);
   const beforeSave = options.beforeSave || (val => val);
 
@@ -39,6 +40,10 @@ export default function(options = {}) {
         }
         return storage.setItem(key, state);
       });
+  }
+
+  function removeState(key, storage) {
+    return Promise.resolve().then(() => storage.removeItem(key));
   }
 
   function reducer(state, paths) {
@@ -75,17 +80,23 @@ export default function(options = {}) {
         }
       })
       .then(() => {
-        const unsyncFucntion = subscriber(
+        const unsyncFunction = subscriber(
           store,
-          throttle((mutation, state) => {
-            const reducedState = reducer(state, options.paths || []);
-            return setState(key, reducedState, storage);
-          }, throttleTime)
+          throttle(
+            (mutation, state) => {
+              const reducedState = reducer(state, options.paths || []);
+              return setState(key, reducedState, storage);
+            },
+            throttleTime,
+            throttleOptions
+          )
         );
 
         return function() {
           unsynced = true;
-          unsyncFucntion();
+
+          unsyncFunction();
+          return removeState(key, storage);
         };
       });
   };
