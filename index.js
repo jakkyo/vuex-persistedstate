@@ -7,6 +7,10 @@ import uuid from 'random-uuid-v4';
 export default function(options = {}) {
   const storage = options.storage || (window && window.sessionStorage);
   const key = options.key || 'vuex';
+  const paths = options.paths || [];
+  const pathsForSubcscribe = paths.map(path => {
+    return path.split('.').join('/');
+  });
   const throttleTime = options.throttleTime || 0;
   const throttleOptions = options.throttleOptions || undefined;
   const afterLoad = options.afterLoad || (val => val);
@@ -54,6 +58,17 @@ export default function(options = {}) {
         }, {});
   }
 
+  function satisfyToPath(type) {
+    const havePaths = pathsForSubcscribe.length > 0;
+    const satisfyToSomePath = pathsForSubcscribe.some(path => {
+      return type.indexOf(path) === 0;
+    });
+    if (havePaths && !satisfyToSomePath) {
+      return false;
+    }
+    return true;
+  }
+
   function subscriber(store, handler) {
     return store.subscribe(handler);
   }
@@ -84,7 +99,10 @@ export default function(options = {}) {
           store,
           throttle(
             (mutation, state) => {
-              const reducedState = reducer(state, options.paths || []);
+              if (!satisfyToPath(mutation.type)) {
+                return;
+              }
+              const reducedState = reducer(state, paths);
               return setState(key, reducedState, storage);
             },
             throttleTime,
