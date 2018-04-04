@@ -15,6 +15,7 @@ export default function(options = {}) {
   const throttleOptions = options.throttleOptions || undefined;
   const afterLoad = options.afterLoad || (val => val);
   const beforeSave = options.beforeSave || (val => val);
+  const initialSet = options.initialSet || false;
 
   function getState(key, storage) {
     let value;
@@ -93,6 +94,13 @@ export default function(options = {}) {
             })
           );
         }
+      })
+      .then(() => {
+        if (!initialSet) {
+          return;
+        }
+        const reducedState = reducer(store.state, paths);
+        return setState(key, reducedState, storage);
       })
       .then(() => {
         const unsyncFunction = subscriber(

@@ -30,6 +30,7 @@ Creates a new instance of the plugin with the given options. The following optio
 - `key <String>`: The key to store the persisted state under. (default: __vuex__)
 - `paths <Array>`: An array of any paths to partially persist the state. If no paths are given, the complete state is persisted. (default: __[]__)
 - `storage <Object>`: Defaults to sessionStorage.
+- `initialSet <Boolean>`: Initial storage set. (default: true)
 - `throttleTime <Number>`: Minimum time in ms between storage updates. (default: 0)
 - `throttleOptions <Object>`: The throttle options object. (default: {}, defaultOptions: { leading: true, trailing: true })
 - `afterLoad <value | Promise(value) <- Function>`: A function that will be called to process storage value before parsing it from json and rehydrating state. Defaults to returning same value.
